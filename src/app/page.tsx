@@ -1,101 +1,116 @@
-import Image from "next/image";
+import FilmHero from '@/components/film/FilmHero'
+import FilmGrid from '@/components/film/FilmGrid'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import FeaturedReviews from '@/components/film/FilmReviews'
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  // Mock data for featured film
+  const featuredFilm = {
+    id: 'dune-part-2',
+    title: 'Dune: Part Two',
+    posterUrl: '/images/dune-2.jpg',
+    backdropUrl: '/images/dune-2-backdrop.jpg',
+    rating: 4.8,
+    releaseDate: '2024',
+    description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.',
+    categories: ['Sci-Fi', 'Adventure']
+  }
+  
+  // Mock data for recent films
+  const recentFilms = [
+    {
+      id: 'poor-things',
+      title: 'Poor Things',
+      posterUrl: '/images/poor-things.jpg',
+      rating: 4.5,
+      releaseDate: '2023',
+      categories: ['Drama', 'Sci-Fi']
+    },
+    {
+      id: 'oppenheimer',
+      title: 'Oppenheimer',
+      posterUrl: '/images/oppenheimer.jpg',
+      rating: 4.6,
+      releaseDate: '2023',
+      categories: ['Drama', 'Biography']
+    },
+    {
+      id: 'past-lives',
+      title: 'Past Lives',
+      posterUrl: '/images/past-lives.jpg',
+      rating: 4.4,
+      releaseDate: '2023',
+      categories: ['Drama', 'Romance']
+    },
+    {
+      id: 'killers-flower-moon',
+      title: 'Killers of the Flower Moon',
+      posterUrl: '/images/killers.jpg',
+      rating: 4.3,
+      releaseDate: '2023',
+      categories: ['Crime', 'Drama']
+    },
+    {
+      id: 'anatomy-fall',
+      title: 'Anatomy of a Fall',
+      posterUrl: '/images/anatomy.jpg',
+      rating: 4.5,
+      releaseDate: '2023',
+      categories: ['Drama', 'Mystery']
+    },
+    {
+      id: 'the-zone-interest',
+      title: 'The Zone of Interest',
+      posterUrl: '/images/zone.jpg',
+      rating: 4.2,
+      releaseDate: '2023',
+      categories: ['Drama', 'History']
+    }
+  ]
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <div className="flex flex-col gap-12 pb-16">
+      {/* Hero section */}
+      <FilmHero film={featuredFilm} />
+      
+      {/* Recent films section */}
+      <section className="container mx-auto px-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-bold">Recent Reviews</h2>
+          <Button variant="outline" asChild>
+            <Link href="/film">
+              View All
+            </Link>
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <FilmGrid films={recentFilms} />
+      </section>
+      
+      {/* Featured Reviews section */}
+      <section className="container mx-auto px-4">
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold">Featured Reviews</h2>
+          <p className="text-muted-foreground mt-2">Deep dives into cinema's most compelling stories</p>
+        </div>
+        <FeaturedReviews />
+      </section>
+      
+      {/* Newsletter section */}
+      <section className="container mx-auto px-4 bg-accent/20 rounded-xl p-8">
+        <div className="text-center max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4">Stay Updated</h2>
+          <p className="text-muted-foreground mb-6">Get the latest reviews and cinema news delivered to your inbox</p>
+          <div className="flex gap-2 max-w-md mx-auto">
+            <input 
+              type="email" 
+              placeholder="Your email address" 
+              className="flex-1 px-4 py-2 bg-background border border-input rounded-md"
+            />
+            <Button>Subscribe</Button>
+          </div>
+        </div>
+      </section>
     </div>
-  );
+  )
 }
