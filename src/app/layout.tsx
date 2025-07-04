@@ -1,5 +1,6 @@
 import { beVietnamPro, inter } from '@/lib/font';
 import Provider from '@/providers/Provider';
+import { Toaster } from 'sonner';
 
 export default function RootLayout({
   children,
@@ -8,9 +9,10 @@ export default function RootLayout({
 }>) {
   return (
     <html suppressHydrationWarning>
-      <title> Admin KWAI</title>
+      <title> FILM</title>
       <body className={`${inter.variable} ${beVietnamPro.variable} antialiased`}>
         <Provider>
+          <Toaster position="top-right" richColors />
           {children}
         </Provider>
       </body>

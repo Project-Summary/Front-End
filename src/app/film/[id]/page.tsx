@@ -1,295 +1,354 @@
 "use client";
-// app/film/[id]/page.js
-import Link from 'next/link'
-import { ArrowLeft, Calendar, Clock, Play, Star, User2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import FilmGrid from '@/components/film/FilmGrid'
-import FilmReview from '@/components/film/FilmReview'
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useSelector, useDispatch } from 'react-redux';
+import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Heart,
+  Star,
+  Eye,
+  Calendar,
+  Clock,
+  Play,
+  Plus,
+  Share,
+  ArrowLeft
+} from 'lucide-react';
+import { RootState } from '@/app/redux/store';
+import { getFilmByIdThunk, likeFilmThunk, incrementViewThunk } from '@/app/redux/film/thunk.film';
+import RatingDialog from '@/components/content/RatingDialog.component';
+import PlaylistDialog from '@/components/content/PlaylistDialog.component';
+import FeedbackSection from '@/components/content/FeedbackSection';
+import EpisodesSection from '@/components/film/EpisodeSection';
 
-export default function FilmDetailPage({ params }: {params: any}) {
-  // In a real application, you would fetch this based on params.id
-  const film = {
-    id: 'dune-part-2',
-    title: 'Dune: Part Two',
-    tagline: 'It begins.',
-    posterUrl: '/images/dune-2.jpg',
-    backdropUrl: '/images/dune-2-backdrop.jpg',
-    rating: 4.8,
-    voteCount: 2783,
-    releaseDate: 'March 1, 2024',
-    runtime: '166 min',
-    director: 'Denis Villeneuve',
-    description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family. Facing a choice between the love of his life and the fate of the universe, he must prevent a terrible future only he can foresee.',
-    cast: [
-      { name: 'Timothée Chalamet', role: 'Paul Atreides', photoUrl: '/cast/timothee.jpg' },
-      { name: 'Zendaya', role: 'Chani', photoUrl: '/cast/zendaya.jpg' },
-      { name: 'Rebecca Ferguson', role: 'Lady Jessica', photoUrl: '/cast/rebecca.jpg' },
-      { name: 'Javier Bardem', role: 'Stilgar', photoUrl: '/cast/javier.jpg' },
-      { name: 'Josh Brolin', role: 'Gurney Halleck', photoUrl: '/cast/josh.jpg' },
-      { name: 'Austin Butler', role: 'Feyd-Rautha Harkonnen', photoUrl: '/cast/austin.jpg' }
-    ],
-    categories: ['Sci-Fi', 'Adventure', 'Drama', 'Action'],
-    trailer: 'https://www.youtube.com/watch?v=Way9Dexny3w',
-    fullReview: {
-      id: 'dune-part-2-review',
-      author: {
-        name: 'James Rodriguez',
-        avatar: '/avatars/james.jpg',
-        initials: 'JR'
-      },
-      date: 'April 2, 2024',
-      content: `<p>Denis Villeneuve's "Dune: Part Two" is that rare sequel that not only lives up to its predecessor but surpasses it in almost every way. Building on the foundation of the 2021 film, Part Two completes Frank Herbert's first Dune novel with spectacular visuals, emotional depth, and thematic richness.</p>
+export default function FilmDetailPage() {
+  const { id } = useParams();
+  const dispatch = useDispatch();
+  const { selectedFilm, loading } = useSelector((state: RootState) => state.film);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
+  const router = useRouter();
 
-      <p>Where the first film was criticized by some for its deliberate pacing and extensive worldbuilding, Part Two hits the ground running. We rejoin Paul Atreides (Timothée Chalamet) and his mother Lady Jessica (Rebecca Ferguson) as they integrate into the Fremen society on Arrakis. Paul's journey from refugee to messianic figure forms the emotional core of the film, with Chalamet delivering a nuanced performance that captures both Paul's vulnerability and his growing power.</p>
-      
-      <p>Zendaya's Chani, merely glimpsed in the first film, becomes a fully realized character here. Her romance with Paul provides some of the film's most affecting moments, particularly as she wrestles with her feelings for him against her suspicion of his growing mythic status among her people. Their relationship serves as an emotional anchor amid the grand political and religious themes.</p>
-      
-      <p>Villeneuve's direction remains impeccable. The action sequences—particularly the Fremen's guerrilla attacks on Harkonnen spice operations and Paul's climactic knife fight—are staged with clarity and impact. The sandworm riding sequence, a pivotal moment for readers of the novel, is realized with breathtaking grandeur.</p>
-      
-      <p>The film's production design continues to impress, from the harsh beauty of the desert landscapes to the brutalist architecture of the Harkonnen stronghold. Hans Zimmer's score, with its blend of pounding percussion, haunting vocals, and electronic elements, enhances the otherworldly atmosphere.</p>
-      
-      <p>Among the new cast additions, Austin Butler stands out as the sadistic Feyd-Rautha Harkonnen, bringing a chilling charisma to the role. Florence Pugh makes the most of her limited screen time as Princess Irulan, setting up her character's importance for potential future installments.</p>
-      
-      <p>At its heart, "Dune: Part Two" is about the dangers of messianic figures and the double-edged sword of religious fervor. The film doesn't shy away from showing how Paul, despite his personal reservations, uses the Fremen's religious beliefs to advance his own agenda of revenge. These themes give the spectacular action sequences moral weight and complexity.</p>
-      
-      <p>With its combination of visual splendor, thoughtful themes, and emotional resonance, "Dune: Part Two" stands as one of the finest science fiction films in recent memory. It completes the story begun in Part One while leaving the door open for adaptations of Herbert's subsequent novels. Even viewers unfamiliar with the source material will find much to appreciate in this epic tale of destiny, power, and the price of vengeance.</p>`
+  useEffect(() => {
+    if (id) {
+      dispatch(getFilmByIdThunk(id as string) as any);
+      dispatch(incrementViewThunk(id as string) as any);
     }
+  }, [id, dispatch]);
+
+  const handleLike = () => {
+    if (!isAuthenticated) {
+      // Redirect to login or show login modal
+      return;
+    }
+    dispatch(likeFilmThunk(id as string) as any);
+  };
+
+  const handleAddToWatchlist = () => {
+    if (!isAuthenticated) {
+      return;
+    }
+    // Logic to add to watchlist
+  };
+
+  if (!selectedFilm) {
+    return <div className="container mx-auto px-4 py-8">Phim không tìm thấy</div>;
   }
 
-  // Similar films (in a real app, these would be fetched based on the current film)
-  const similarFilms = [
-    {
-      id: 'blade-runner-2049',
-      title: 'Blade Runner 2049',
-      posterUrl: '/images/blade-runner.jpg',
-      rating: 4.5,
-      releaseDate: '2017',
-      categories: ['Sci-Fi', 'Drama']
-    },
-    {
-      id: 'arrival',
-      title: 'Arrival',
-      posterUrl: '/images/arrival.jpg',
-      rating: 4.6,
-      releaseDate: '2016',
-      categories: ['Sci-Fi', 'Drama']
-    },
-    {
-      id: 'foundation',
-      title: 'Foundation',
-      posterUrl: '/images/foundation.jpg',
-      rating: 4.2,
-      releaseDate: '2021',
-      categories: ['Sci-Fi', 'Drama']
-    },
-    {
-      id: 'interstellar',
-      title: 'Interstellar',
-      posterUrl: '/images/interstellar.jpg',
-      rating: 4.7,
-      releaseDate: '2014',
-      categories: ['Sci-Fi', 'Adventure']
-    },
-    {
-      id: 'mad-max-fury-road',
-      title: 'Mad Max: Fury Road',
-      posterUrl: '/images/mad-max.jpg',
-      rating: 4.6,
-      releaseDate: '2015',
-      categories: ['Action', 'Adventure']
-    },
-    {
-      id: 'avatar-2',
-      title: 'Avatar: The Way of Water',
-      posterUrl: '/images/avatar-2.jpg',
-      rating: 4.3,
-      releaseDate: '2022',
-      categories: ['Sci-Fi', 'Action']
-    }
-  ]
-
   return (
-    <div className="pb-16">
-      {/* Hero section */}
-      <section className="relative h-[70vh] min-h-[500px] max-h-[800px] w-full overflow-hidden">
-        {/* Background image with overlay */}
-        <div className="absolute inset-0 bg-black/50 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-20" />
-        
-        <img 
-          src={film.backdropUrl || '/images/placeholder-backdrop.jpg'} 
-          alt={film.title}
-          className="absolute inset-0 object-cover w-full h-full z-0"
+    <div className="min-h-screen">
+
+      {/* Hero Section */}
+      <div className="relative h-96 md:h-[500px] overflow-hidden">
+        <Button className="absolute left-5 top-5 z-40" variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Quay lại
+        </Button>
+        <Image
+          src={selectedFilm?.backdrop || selectedFilm.poster}
+          alt={selectedFilm.title}
+          fill
+          className="object-cover"
         />
-        
-        {/* Back button */}
-        <div className="absolute top-8 left-8 z-30">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/film" className="flex items-center gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Films
-            </Link>
-          </Button>
-        </div>
-        
-        {/* Content */}
-        <div className="container relative z-30 h-full flex flex-col justify-end px-4 pb-16">
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="flex-shrink-0 hidden md:block">
-              <div className="rounded-lg overflow-hidden shadow-2xl w-52 border border-muted">
-                <img 
-                  src={film.posterUrl || '/images/placeholder.jpg'} 
-                  alt={film.title}
-                  className="object-cover w-full aspect-[2/3]"
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 p-8">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-shrink-0">
+                <Image
+                  src={selectedFilm.poster}
+                  alt={selectedFilm.title}
+                  width={200}
+                  height={300}
+                  className="rounded-lg shadow-lg"
                 />
               </div>
-            </div>
-            
-            <div className="flex flex-col gap-4">
-              <div>
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{film.title}</h1>
-                <p className="text-white/80 text-xl italic">{film.tagline}</p>
-                <div className="flex flex-wrap items-center gap-3 text-white/80 mt-3">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-5 w-5 fill-white" />
-                    <span>{film.rating}/5</span>
-                    <span className="text-white/60 text-sm">({film.voteCount})</span>
-                  </div>
-                  <span>•</span>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{film.releaseDate}</span>
-                  </div>
-                  <span>•</span>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{film.runtime}</span>
-                  </div>
-                  <span>•</span>
-                  <div className="flex items-center gap-1">
-                    <User2 className="h-4 w-4" />
-                    <span>Director: {film.director}</span>
+
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h1 className="text-4xl font-bold text-white mb-2">
+                    {selectedFilm.title}
+                  </h1>
+                  <div className="flex items-center gap-4 text-white/80">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(selectedFilm.releaseDate).getFullYear()}
+                    </span>
+                    {selectedFilm.duration && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {selectedFilm.duration} phút
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      {selectedFilm.averageRating?.toFixed(1) || 'N/A'}
+                    </span>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {film.categories.map((category, index) => (
-                  <Link key={index} href={`/category/${category.toLowerCase()}`}>
-                    <Badge className="cursor-pointer">{category}</Badge>
-                  </Link>
-                ))}
-              </div>
-              
-              <p className="text-white/80 max-w-2xl">{film.description}</p>
-              
-              <div className="flex flex-wrap gap-3 mt-4">
-                <Button size="lg" className="gap-2">
-                  <Play className="h-4 w-4 fill-current" /> Watch Trailer
-                </Button>
-                <Button variant="outline" size="lg">
-                  Add to Watchlist
-                </Button>
+
+                <div className="flex flex-wrap gap-2">
+                  {selectedFilm.categories?.map((category) => (
+                    <Badge key={category._id} variant="secondary">
+                      {category.name}
+                    </Badge>
+                  ))}
+                </div>
+
+                <p className="text-white/90 max-w-2xl">
+                  {selectedFilm.description}
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button size="lg">
+                    <Play className="mr-2 h-5 w-5" />
+                    Xem ngay
+                  </Button>
+
+                  {isAuthenticated && (
+                    <>
+                      <Button variant="outline" onClick={handleAddToWatchlist}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Danh sách xem
+                      </Button>
+                      <Button variant="outline" onClick={handleLike}>
+                        <Heart className="mr-2 h-4 w-4" />
+                        Thích
+                      </Button>
+                      <Button variant="outline" onClick={() => setRatingDialogOpen(true)}>
+                        <Star className="mr-2 h-4 w-4" />
+                        Đánh giá
+                      </Button>
+                      <Button variant="outline" onClick={() => setPlaylistDialogOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Danh sách phát
+                      </Button>
+                    </>
+                  )}
+
+                  <Button variant="outline">
+                    <Share className="mr-2 h-4 w-4" />
+                    Chia sẻ
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Main content */}
-      <div className="container px-4 mt-8 md:mt-12">
-        <Tabs defaultValue="review" className="w-full">
-          <TabsList className="mb-8">
-            <TabsTrigger value="review">Review</TabsTrigger>
-            <TabsTrigger value="cast">Cast & Crew</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
+      {/* Content Tabs */}
+      <div className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+            <TabsTrigger value="episodes">Tập phim</TabsTrigger>
+            <TabsTrigger value="reviews">Đánh giá</TabsTrigger>
+            <TabsTrigger value="details">Chi tiết</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="review" className="space-y-8">
-            <FilmReview review={film.fullReview} />
-          </TabsContent>
-          
-          <TabsContent value="cast">
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Cast</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
-                {film.cast.map((person, index) => (
-                  <div key={index} className="flex flex-col items-center text-center">
-                    <div className="w-24 h-24 rounded-full overflow-hidden mb-2 border">
-                      <img 
-                        src={person.photoUrl || '/images/placeholder-avatar.jpg'} 
-                        alt={person.name}
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <h3 className="font-medium text-sm">{person.name}</h3>
-                    <p className="text-muted-foreground text-xs">{person.role}</p>
+
+          <TabsContent value="overview" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tóm tắt</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{selectedFilm.description}</p>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Thống kê
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Lượt xem:</span>
+                    <span className="font-medium">{selectedFilm.statistics?.views || 0}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="flex justify-between">
+                    <span>Lượt thích:</span>
+                    <span className="font-medium">{selectedFilm.statistics?.likes || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Bình luận:</span>
+                    <span className="font-medium">{selectedFilm.statistics?.comments || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Đánh giá:</span>
+                    <span className="font-medium">
+                      {selectedFilm.averageRating?.toFixed(1) || 'N/A'}/10
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thông tin</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Ngày phát hành:</span>
+                    <span className="font-medium">
+                      {new Date(selectedFilm.releaseDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Thời gian:</span>
+                    <span className="font-medium">{selectedFilm.duration} phút</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Ngôn ngữ:</span>
+                    <span className="font-medium">{selectedFilm.language || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Quốc gia:</span>
+                    <span className="font-medium">{selectedFilm.country || 'N/A'}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thẻ</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFilm.tags?.map((tag, index) => (
+                      <Badge key={index} variant="outline">
+                        {tag}
+                      </Badge>
+                    )) || <span className="text-muted-foreground">Không có thẻ</span>}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
-          
+
+          <TabsContent value="episodes">
+            <EpisodesSection filmId={selectedFilm._id} />
+          </TabsContent>
+
+          <TabsContent value="reviews">
+            <FeedbackSection
+              contentId={selectedFilm._id}
+              contentType="movie"
+              showAddReview={isAuthenticated}
+            />
+          </TabsContent>
+
           <TabsContent value="details">
-            <div className="space-y-6 max-w-3xl">
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Film Details</h2>
-                <dl className="space-y-3">
-                  <div className="flex flex-wrap">
-                    <dt className="w-36 font-medium">Title</dt>
-                    <dd>{film.title}</dd>
+            <Card>
+              <CardHeader>
+                <CardTitle>Thông tin chi tiết</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Xem trước kịch bản</h4>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <p className="text-sm">
+                      {selectedFilm.script ?
+                        selectedFilm.script.substring(0, 500) + '...' :
+                        'Không có kịch bản'
+                      }
+                    </p>
                   </div>
-                  <div className="flex flex-wrap">
-                    <dt className="w-36 font-medium">Director</dt>
-                    <dd>{film.director}</dd>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-2">Thể loại</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFilm.categories?.map((category) => (
+                      <Badge key={category._id}>
+                        {category.name}
+                      </Badge>
+                    ))}
                   </div>
-                  <div className="flex flex-wrap">
-                    <dt className="w-36 font-medium">Release Date</dt>
-                    <dd>{film.releaseDate}</dd>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-2">Thông tin bổ sung</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Trạng thái:</span>
+                      <Badge className="ml-2" variant={
+                        selectedFilm.status === 'published' ? 'default' : 'secondary'
+                      }>
+                        {selectedFilm.status}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Tạo bằng AI:</span>
+                      <Badge className="ml-2" variant={selectedFilm.isAIGenerated ? 'outline' : 'secondary'}>
+                        {selectedFilm.isAIGenerated ? 'Có' : 'Không'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Ngày tạo:</span>
+                      <span className="ml-2">{new Date(selectedFilm.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Ngày cập nhật:</span>
+                      <span className="ml-2">{new Date(selectedFilm.updatedAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap">
-                    <dt className="w-36 font-medium">Runtime</dt>
-                    <dd>{film.runtime}</dd>
-                  </div>
-                  <div className="flex flex-wrap">
-                    <dt className="w-36 font-medium">Rating</dt>
-                    <dd className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-current text-primary" />
-                      {film.rating}/5 ({film.voteCount} votes)
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap">
-                    <dt className="w-36 font-medium">Genres</dt>
-                    <dd className="flex flex-wrap gap-1">
-                      {film.categories.map((category, index) => (
-                        <Link key={index} href={`/category/${category.toLowerCase()}`}>
-                          <Badge variant="outline" className="cursor-pointer">{category}</Badge>
-                        </Link>
-                      ))}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
-      
-      {/* Similar films section */}
-      <section className="container mx-auto px-4 mt-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Similar Films</h2>
-          <Button variant="outline" asChild>
-            <Link href="/film">
-              View All
-            </Link>
-          </Button>
-        </div>
-        <FilmGrid films={similarFilms} />
-      </section>
+
+      {/* Dialogs */}
+      <RatingDialog
+        open={ratingDialogOpen}
+        onOpenChange={setRatingDialogOpen}
+        item={selectedFilm}
+        type="film"
+      />
+
+      <PlaylistDialog
+        open={playlistDialogOpen}
+        onOpenChange={setPlaylistDialogOpen}
+        item={selectedFilm}
+        type="film"
+      />
     </div>
-  )
+  );
 }

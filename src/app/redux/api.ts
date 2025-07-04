@@ -1,12 +1,13 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 
 // Base URL của API backend
 // const devEnv = process.env.NODE_ENV !== 'production';
 
 // const baseURL = devEnv ? process.env.NEXT_PUBLIC_DEV_API : process.env.NEXT_PUBLIC_PROD_API;
 const baseURL = `${process.env.NEXT_PUBLIC_DEV_API}`
-  ? `${process.env.NEXT_PUBLIC_DEV_API}`
-  : 'http://localhost:5000';
+  ? `${process.env.NEXT_PUBLIC_DEV_API}/api`
+  : 'http://localhost:5000/api';
 // Định nghĩa header constants
 const HEADER = {
   API_KEY: 'x-api-key',
@@ -51,69 +52,72 @@ API.interceptors.request.use((req: InternalAxiosRequestConfig) => {
 });
 
 // Hàm refresh access token
-// const refreshAccessToken = async () => {
-//     try {
-//         // Gọi API refresh token
-//         const response = await API.post('/auth/refresh', {
-//             withCredentials: true, // Gửi cookies kèm theo request
-//         });
+const refreshAccessToken = async () => {
+  try {
+    // Gọi API refresh token
+    const response = await API.post('/auth/refresh', {
+      withCredentials: true, // Gửi cookies kèm theo request
+    });
 
-//         const { accessToken } = response.data.accessToken;
+    const { accessToken } = response.data.accessToken;
 
-//         // Lưu accessToken mới vào localStorage
-//         localStorage.setItem('accessToken', accessToken);
+    // Lưu accessToken mới vào localStorage
+    localStorage.setItem('accessToken', accessToken);
 
-//         return accessToken;
-//     } catch (err) {
-//         console.error('Error refreshing access token', err);
-//         // Chuyển hướng về trang login nếu refresh token thất bại
-//         // window.location.href = '/auth/login';
-//         return Promise.reject(err);
-//     }
-// };
+    return accessToken;
+  } catch (err) {
+    console.error('Error refreshing access token', err);
+    // Chuyển hướng về trang login nếu refresh token thất bại
+    // window.location.href = '/auth/login';
+    return Promise.reject(err);
+  }
+};
 
 // Thêm interceptor cho response để xử lý khi gặp lỗi 401 (Unauthorized)
-// API.interceptors.response.use(
-//     (response) => response,
-//     async (error) => {
-//         const originalRequest = error.config;
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-//         if (originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/register')) {
-//             return Promise.reject(error);
-//         }
+    if (
+      originalRequest.url.includes('/auth/login') ||
+      originalRequest.url.includes('/auth/register')
+    ) {
+      return Promise.reject(error);
+    }
 
-//         if (error.response && error.response.status === 401 && !originalRequest._retry) {
-//             originalRequest._retry = true;
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-//             try {
-//                 const newAccessToken = await refreshAccessToken();
+      try {
+        const newAccessToken = await refreshAccessToken();
 
-//                 if (!newAccessToken) {
-//                     window.location.href = '/auth/login';
-//                     return Promise.reject(error);
-//                 }
+        if (!newAccessToken) {
+          window.location.href = '/auth/login';
+          return Promise.reject(error);
+        }
 
-//                 originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
 
-//                 return axios({
-//                     ...originalRequest,
-//                     withCredentials: true,
-//                 });
-//             } catch (err) {
-//                 console.error('Error retrying request after token refresh', err);
-//                 window.location.href = '/auth/login';
-//                 return Promise.reject(err);
-//             }
-//         }
+        return axios({
+          ...originalRequest,
+          withCredentials: true,
+        });
+      } catch (err) {
+        console.error('Error retrying request after token refresh', err);
+        window.location.href = '/auth/login';
+        return Promise.reject(err);
+      }
+    }
 
-//         if (error.response && error.response.status === 403) {
-//             message.error('You do not have permission to access this resource');
-//             window.history.back();
-//             return Promise.reject(error);
-//         }
+    if (error.response && error.response.status === 403) {
+      toast.error('You do not have permission to access this resource');
+      window.history.back();
+      return Promise.reject(error);
+    }
 
-//         return Promise.reject(error);
-//     },
-// );
+    return Promise.reject(error);
+  },
+);
 
 export default API;

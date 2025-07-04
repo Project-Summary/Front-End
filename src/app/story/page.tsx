@@ -1,0 +1,324 @@
+"use client";
+import { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import {
+  BookOpen,
+  Grid,
+  List,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import { AppDispatch, RootState } from '@/app/redux/store';
+import { getAllStoriesThunk } from '@/app/redux/story/thunk.story';
+import { getCategoriesThunk } from '@/app/redux/categories/thunk.categories';
+import ContentGrid from '@/components/content/contentGrid.component';
+
+export default function StoriesPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { stories, loading } = useSelector((state: RootState) => state.story);
+  const { categories } = useSelector((state: RootState) => state.categories);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
+  const [viewMode, setViewMode] = useState('grid');
+  const [sortBy, setSortBy] = useState('releaseDate');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filteredStories, setFilteredStories] = useState([]);
+
+  useEffect(() => {
+    dispatch(getAllStoriesThunk({}) as any);
+    dispatch(getCategoriesThunk() as any);
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Apply filters and sorting
+    let filtered = stories?.filter(story => story.status === 'published') || [];
+
+    // Category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(story =>
+        story.categories?.some(cat => cat._id === selectedCategory)
+      );
+    }
+
+    // Sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case 'title':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        case 'releaseDate':
+          aValue = new Date(a.releaseDate || 0);
+          bValue = new Date(b.releaseDate || 0);
+          break;
+        case 'rating':
+          aValue = a.averageRating || 0;
+          bValue = b.averageRating || 0;
+          break;
+        case 'views':
+          aValue = a.statistics?.views || 0;
+          bValue = b.statistics?.views || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setFilteredStories(filtered as any);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [stories, selectedCategory, sortBy, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredStories.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentStories = filteredStories.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    pages.push(
+      <Button
+        key="prev"
+        variant="outline"
+        size="sm"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+    );
+
+    // First page
+    if (startPage > 1) {
+      pages.push(
+        <Button
+          key={1}
+          variant={currentPage === 1 ? "default" : "outline"}
+          size="sm"
+          onClick={() => handlePageChange(1)}
+        >
+          1
+        </Button>
+      );
+      if (startPage > 2) {
+        pages.push(<span key="ellipsis1" className="px-2">...</span>);
+      }
+    }
+
+    // Visible pages
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <Button
+          key={i}
+          variant={currentPage === i ? "default" : "outline"}
+          size="sm"
+          onClick={() => handlePageChange(i)}
+        >
+          {i}
+        </Button>
+      );
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push(<span key="ellipsis2" className="px-2">...</span>);
+      }
+      pages.push(
+        <Button
+          key={totalPages}
+          variant={currentPage === totalPages ? "default" : "outline"}
+          size="sm"
+          onClick={() => handlePageChange(totalPages)}
+        >
+          {totalPages}
+        </Button>
+      );
+    }
+
+    // Next button
+    pages.push(
+      <Button
+        key="next"
+        variant="outline"
+        size="sm"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    );
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-8">
+        {pages}
+      </div>
+    );
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <BookOpen className="h-8 w-8" />
+              Truyện
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Khám phá những câu chuyện hấp dẫn và những cuộc phiêu lưu văn học
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Filters and Sorting */}
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="flex flex-wrap gap-4">
+            {/* Category Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Thể loại:</label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả các thể loại</SelectItem>
+                  {categories?.map((category) => (
+                    <SelectItem key={category._id} value={category._id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort By */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Sắp xếp:</label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="releaseDate">Ngày phát hành</SelectItem>
+                  <SelectItem value="title">Tiêu đề</SelectItem>
+                  <SelectItem value="rating">Xếp hạng</SelectItem>
+                  <SelectItem value="views">Lượt xem</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort Order */}
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">↓</SelectItem>
+                <SelectItem value="asc">↑</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>
+              Hiển thị {startIndex + 1}-{Math.min(endIndex, filteredStories.length)} trong số {filteredStories.length} câu chuyện
+            </span>
+            {selectedCategory !== 'all' && (
+              <Badge variant="secondary">
+                {categories?.find(c => c._id === selectedCategory)?.name}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Đang tải các câu chuyện...</p>
+        </div>
+      ) : currentStories.length > 0 ? (
+        <>
+          <ContentGrid
+            items={currentStories}
+            type="story"
+            showActions={isAuthenticated}
+            columns={viewMode === 'grid' ? 4 : 2}
+          />
+          {renderPagination()}
+        </>
+      ) : (
+        <Card>
+          <CardContent className="text-center py-12">
+            <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Không tìm thấy truyện nào</h3>
+            <p className="text-muted-foreground mb-4">
+              {selectedCategory !== 'all'
+                ? 'Không tìm thấy truyện nào trong danh mục này'
+                : 'Không có truyện nào khả dụng tại thời điểm này'
+              }
+            </p>
+            {selectedCategory !== 'all' && (
+              <Button variant="outline" onClick={() => setSelectedCategory('all')}>
+                Hiển thị tất cả truyện
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
